@@ -1,3 +1,4 @@
+# type: ignore
 import graphene
 from associations.schema.artisan_schema import ArtisanQuery, ArtisanMutation
 from associations.schema.association_schema import AssociationQuery, AssociationMutation

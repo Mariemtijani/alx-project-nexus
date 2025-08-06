@@ -13,7 +13,7 @@ class AssociationType(DjangoObjectType):
         fields = ("id", "name", "description", "logo_url", "email", "phone", "admin")
 
 # ---------------- Queries ----------------
-class Query(graphene.ObjectType):
+class AssociationQuery(graphene.ObjectType):
     all_associations = graphene.List(AssociationType)
     association = graphene.Field(AssociationType, id=graphene.UUID(required=True))
 
@@ -96,7 +96,7 @@ class DeleteAssociation(graphene.Mutation):
             raise GraphQLError('Association not found')
 
 # ---------------- Mutation Class ----------------
-class Mutation(graphene.ObjectType):
+class AssociationMutation(graphene.ObjectType):
     create_association = CreateAssociation.Field()
     update_association = UpdateAssociation.Field()
     delete_association = DeleteAssociation.Field()

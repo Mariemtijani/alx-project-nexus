@@ -12,7 +12,7 @@ class ArtisanType(DjangoObjectType):
         fields = ("user", "association", "bio")
 
 # ---------------- Queries ----------------
-class Query(graphene.ObjectType):
+class ArtisanQuery(graphene.ObjectType):
     all_artisans = graphene.List(ArtisanType)
     artisan = graphene.Field(ArtisanType, user_id=graphene.UUID(required=True))
 
@@ -93,7 +93,7 @@ class DeleteArtisan(graphene.Mutation):
             raise GraphQLError('Artisan not found')
 
 # ---------------- Mutation Class ----------------
-class Mutation(graphene.ObjectType):
+class ArtisanMutation(graphene.ObjectType):
     create_artisan = CreateArtisan.Field()
     update_artisan = UpdateArtisan.Field()
     delete_artisan = DeleteArtisan.Field()
