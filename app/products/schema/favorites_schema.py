@@ -3,6 +3,8 @@ from graphene_django import DjangoObjectType
 from products.models import Favorite, Product
 from users.models import User
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
+
 
 # -------- Type --------
 class FavoriteType(DjangoObjectType):
@@ -30,6 +32,7 @@ class AddFavorite(graphene.Mutation):
         buyer_id = graphene.UUID(required=True)
         product_id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, buyer_id, product_id):
         try:
             buyer = User.objects.get(id=buyer_id, role='buyer')
@@ -47,6 +50,7 @@ class RemoveFavorite(graphene.Mutation):
         buyer_id = graphene.UUID(required=True)
         product_id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, buyer_id, product_id):
         try:
             favorite = Favorite.objects.get(buyer_id=buyer_id, product_id=product_id)

@@ -5,6 +5,7 @@ from graphene_django import DjangoObjectType
 from associations.models import Association
 from users.models import User
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
 
 # ---------------- Association GraphQL Type ----------------
 class AssociationType(DjangoObjectType):
@@ -38,6 +39,7 @@ class CreateAssociation(graphene.Mutation):
         phone = graphene.String(required=True)
         admin_id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, name, email, phone, admin_id, description="", logo_url=None):
         try:
             admin = User.objects.get(id=admin_id, role='association_admin')
@@ -66,6 +68,7 @@ class UpdateAssociation(graphene.Mutation):
         email = graphene.String()
         phone = graphene.String()
 
+    @login_required
     def mutate(self, info, id, name=None, description=None, logo_url=None, email=None, phone=None):
         try:
             association = Association.objects.get(id=id)
@@ -87,6 +90,7 @@ class DeleteAssociation(graphene.Mutation):
     class Arguments:
         id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, id):
         try:
             association = Association.objects.get(id=id)

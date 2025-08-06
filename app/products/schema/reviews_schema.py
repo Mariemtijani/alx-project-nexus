@@ -3,6 +3,7 @@ from graphene_django import DjangoObjectType
 from products.models import Review, Product
 from users.models import User
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
 
 # -------- Type --------
 class ReviewType(DjangoObjectType):
@@ -27,6 +28,7 @@ class AddReview(graphene.Mutation):
         rating = graphene.Int(required=True)
         comment = graphene.String()
 
+    @login_required
     def mutate(self, info, buyer_id, product_id, rating, comment=None):
         try:
             buyer = User.objects.get(id=buyer_id, role='buyer')
@@ -43,6 +45,7 @@ class DeleteReview(graphene.Mutation):
     class Arguments:
         review_id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, review_id):
         try:
             review = Review.objects.get(id=review_id)

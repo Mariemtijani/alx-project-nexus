@@ -3,6 +3,8 @@ from graphene_django import DjangoObjectType
 from products.models import Product, Category, ProductTranslation, ProductImage
 from associations.models import Artisan, Association
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
+
 
 # ---------------- GraphQL Types ----------------
 class CategoryType(DjangoObjectType):
@@ -69,6 +71,7 @@ class CreateProduct(graphene.Mutation):
         owner_id = graphene.UUID(required=True)
         category_id = graphene.UUID(required=False)
 
+    @login_required
     def mutate(self, info, title, description, price, stock_quantity, owner_type, owner_id, category_id=None):
         if owner_type not in ['artisan', 'association']:
             raise GraphQLError('Invalid owner type')
@@ -110,6 +113,7 @@ class UpdateProduct(graphene.Mutation):
         category_id = graphene.UUID()
         status = graphene.String()
 
+    @login_required
     def mutate(self, info, id, title=None, description=None, price=None, stock_quantity=None, category_id=None, status=None):
         try:
             product = Product.objects.get(id=id)
@@ -138,6 +142,7 @@ class DeleteProduct(graphene.Mutation):
     class Arguments:
         id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, id):
         try:
             product = Product.objects.get(id=id)

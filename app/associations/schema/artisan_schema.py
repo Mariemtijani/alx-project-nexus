@@ -4,6 +4,7 @@ from graphene_django import DjangoObjectType
 from associations.models import Artisan, Association
 from users.models import User
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
 
 # ---------------- Artisan GraphQL Type ----------------
 class ArtisanType(DjangoObjectType):
@@ -34,6 +35,7 @@ class CreateArtisan(graphene.Mutation):
         association_id = graphene.UUID(required=False)
         bio = graphene.String()
 
+    @login_required
     def mutate(self, info, user_id, association_id=None, bio=""):
         try:
             user = User.objects.get(id=user_id, role='artisan')
@@ -59,6 +61,7 @@ class UpdateArtisan(graphene.Mutation):
         association_id = graphene.UUID()
         bio = graphene.String()
 
+    @login_required
     def mutate(self, info, user_id, association_id=None, bio=None):
         try:
             artisan = Artisan.objects.get(user_id=user_id)
@@ -84,6 +87,7 @@ class DeleteArtisan(graphene.Mutation):
     class Arguments:
         user_id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, user_id):
         try:
             artisan = Artisan.objects.get(user_id=user_id)
