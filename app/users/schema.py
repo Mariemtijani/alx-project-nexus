@@ -1,9 +1,10 @@
-
-# type: ignore
 import graphene
 from graphene_django import DjangoObjectType
 from users.models import User
 from graphql import GraphQLError
+from graphql_jwt.decorators import login_required
+from graphql_jwt.shortcuts import get_token
+from users.utils import hash_password, verify_password
 
 # -------------------- GraphQL Type --------------------
 class UserType(DjangoObjectType):
@@ -11,23 +12,26 @@ class UserType(DjangoObjectType):
         model = User
         fields = ("id", "name", "email", "phone", "role", "profile_picture", "created_at", "updated_at")
 
-# -------------------- Query --------------------
+# -------------------- Queries --------------------
 class Query(graphene.ObjectType):
     all_users = graphene.List(UserType)
     user = graphene.Field(UserType, id=graphene.UUID(required=True))
 
+    @login_required
     def resolve_all_users(self, info):
         return User.objects.all()
 
+    @login_required
     def resolve_user(self, info, id):
         try:
             return User.objects.get(id=id)
         except User.DoesNotExist:
             raise GraphQLError('User not found')
 
-# -------------------- Mutations --------------------
-class CreateUser(graphene.Mutation):
+# -------------------- RegisterUser Mutation --------------------
+class RegisterUser(graphene.Mutation):
     user = graphene.Field(UserType)
+    token = graphene.String()
 
     class Arguments:
         name = graphene.String(required=True)
@@ -38,18 +42,42 @@ class CreateUser(graphene.Mutation):
         profile_picture = graphene.String()
 
     def mutate(self, info, name, email, password, role, phone=None, profile_picture=None):
+        if User.objects.filter(email=email).exists():
+            raise GraphQLError("Email already registered")
+
         user = User(
             name=name,
             email=email,
-            password=password,  # In production, hash this!
+            password=hash_password(password),
             role=role,
             phone=phone,
             profile_picture=profile_picture
         )
         user.save()
-        return CreateUser(user=user)
-# Existing imports...
-from graphql import GraphQLError
+
+        token = get_token(user)
+        return RegisterUser(user=user, token=token)
+
+# -------------------- LoginUser Mutation --------------------
+class LoginUser(graphene.Mutation):
+    user = graphene.Field(UserType)
+    token = graphene.String()
+
+    class Arguments:
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    def mutate(self, info, email, password):
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise GraphQLError('Invalid email or password')
+
+        if not verify_password(password, user.password):
+            raise GraphQLError('Invalid email or password')
+
+        token = get_token(user)
+        return LoginUser(user=user, token=token)
 
 # -------------------- UpdateUser Mutation --------------------
 class UpdateUser(graphene.Mutation):
@@ -64,24 +92,19 @@ class UpdateUser(graphene.Mutation):
         role = graphene.String()
         profile_picture = graphene.String()
 
+    @login_required
     def mutate(self, info, id, name=None, email=None, password=None, phone=None, role=None, profile_picture=None):
         try:
             user = User.objects.get(id=id)
         except User.DoesNotExist:
             raise GraphQLError("User not found")
 
-        if name:
-            user.name = name
-        if email:
-            user.email = email
-        if password:
-            user.password = password  # Hash later!
-        if phone:
-            user.phone = phone
-        if role:
-            user.role = role
-        if profile_picture:
-            user.profile_picture = profile_picture
+        if name: user.name = name
+        if email: user.email = email
+        if password: user.password = hash_password(password)
+        if phone: user.phone = phone
+        if role: user.role = role
+        if profile_picture: user.profile_picture = profile_picture
 
         user.save()
         return UpdateUser(user=user)
@@ -93,23 +116,18 @@ class DeleteUser(graphene.Mutation):
     class Arguments:
         id = graphene.UUID(required=True)
 
+    @login_required
     def mutate(self, info, id):
         try:
             user = User.objects.get(id=id)
+            user.delete()
+            return DeleteUser(success=True)
         except User.DoesNotExist:
             raise GraphQLError("User not found")
 
-        user.delete()
-        return DeleteUser(success=True)
-
-# -------------------- Extend Mutation Class --------------------
+# -------------------- Mutation Class --------------------
 class Mutation(graphene.ObjectType):
-    create_user = CreateUser.Field()
-    update_user = UpdateUser.Field()
-    delete_user = DeleteUser.Field()
-
-
-class Mutation(graphene.ObjectType):
-    create_user = CreateUser.Field()
+    register_user = RegisterUser.Field()
+    login_user = LoginUser.Field()
     update_user = UpdateUser.Field()
     delete_user = DeleteUser.Field()
