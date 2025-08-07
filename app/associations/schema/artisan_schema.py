@@ -5,6 +5,7 @@ from associations.models import Artisan, Association
 from users.models import User
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 # ---------------- Artisan GraphQL Type ----------------
 class ArtisanType(DjangoObjectType):
@@ -12,13 +13,22 @@ class ArtisanType(DjangoObjectType):
         model = Artisan
         fields = ("user", "association", "bio")
 
+# ---------------- Paginated Artisans Type ----------------
+class PaginatedArtisans(graphene.ObjectType):
+    artisans = graphene.List(ArtisanType)
+    page_info = graphene.Field(PageInfo)
+
 # ---------------- Queries ----------------
 class ArtisanQuery(graphene.ObjectType):
-    all_artisans = graphene.List(ArtisanType)
+    all_artisans = graphene.Field(PaginatedArtisans, pagination=PaginationInput())
     artisan = graphene.Field(ArtisanType, user_id=graphene.UUID(required=True))
 
-    def resolve_all_artisans(self, info):
-        return Artisan.objects.select_related('user', 'association').all()
+    def resolve_all_artisans(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
+        queryset = Artisan.objects.select_related('user', 'association').all()
+        artisans, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedArtisans(artisans=artisans, page_info=page_info)
 
     def resolve_artisan(self, info, user_id):
         try:

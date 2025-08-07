@@ -7,6 +7,7 @@ from cart.models import Cart
 from products.models import Product
 from users.models import User
 from graphql import GraphQLError
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 
 # -------------------- GraphQL Type --------------------
@@ -16,14 +17,23 @@ class CartType(DjangoObjectType):
         fields = ("id", "user", "product", "quantity", "created_at", "updated_at")
 
 
+# -------------------- Paginated Cart Type --------------------
+class PaginatedCart(graphene.ObjectType):
+    cart_items = graphene.List(CartType)
+    page_info = graphene.Field(PageInfo)
+
 # -------------------- Queries --------------------
 class CartQuery(graphene.ObjectType):
-    my_cart = graphene.List(CartType)
+    my_cart = graphene.Field(PaginatedCart, pagination=PaginationInput())
 
     @login_required
-    def resolve_my_cart(self, info):
+    def resolve_my_cart(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
         user = info.context.user
-        return Cart.objects.filter(user=user)
+        queryset = Cart.objects.filter(user=user)
+        cart_items, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedCart(cart_items=cart_items, page_info=page_info)
 
 
 # -------------------- Mutations --------------------

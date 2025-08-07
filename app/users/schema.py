@@ -5,6 +5,7 @@ from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
 from graphql_jwt.shortcuts import get_token
 from users.utils import hash_password, verify_password
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 
 # -------------------- GraphQL Type --------------------
@@ -13,14 +14,22 @@ class UserType(DjangoObjectType):
         model = User
         fields = ("id", "name", "email", "phone", "role", "profile_picture", "created_at", "updated_at")
 
+# -------------------- Paginated Users Type --------------------
+class PaginatedUsers(graphene.ObjectType):
+    users = graphene.List(UserType)
+    page_info = graphene.Field(PageInfo)
+
 # -------------------- Queries --------------------
 class Query(graphene.ObjectType):
-    all_users = graphene.List(UserType)
+    all_users = graphene.Field(PaginatedUsers, pagination=PaginationInput())
     user = graphene.Field(UserType, id=graphene.UUID(required=True))
 
     @login_required
-    def resolve_all_users(self, info):
-        return User.objects.all()
+    def resolve_all_users(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
+        users, page_info = paginate_queryset(User.objects.all(), pagination)
+        return PaginatedUsers(users=users, page_info=page_info)
 
     @login_required
     def resolve_user(self, info, id):

@@ -4,6 +4,7 @@ from orders.models import Order, OrderItem
 from users.models import User
 from products.models import Product
 from graphql import GraphQLError
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 # -------- Types --------
 class OrderItemType(DjangoObjectType):
@@ -27,13 +28,22 @@ class OrderItemInput(graphene.InputObjectType):
     quantity = graphene.Int(required=True)
     unit_price = graphene.Float(required=True)
 
+# -------- Paginated Orders Type --------
+class PaginatedOrders(graphene.ObjectType):
+    orders = graphene.List(OrderType)
+    page_info = graphene.Field(PageInfo)
+
 # -------- Queries --------
 class OrderQuery(graphene.ObjectType):
-    all_orders = graphene.List(OrderType)
+    all_orders = graphene.Field(PaginatedOrders, pagination=PaginationInput())
     order = graphene.Field(OrderType, id=graphene.UUID(required=True))
 
-    def resolve_all_orders(self, info):
-        return Order.objects.select_related('buyer').all()
+    def resolve_all_orders(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
+        queryset = Order.objects.select_related('buyer').all()
+        orders, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedOrders(orders=orders, page_info=page_info)
 
     def resolve_order(self, info, id):
         try:

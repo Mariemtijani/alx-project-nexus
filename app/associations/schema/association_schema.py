@@ -6,6 +6,7 @@ from associations.models import Association
 from users.models import User
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 # ---------------- Association GraphQL Type ----------------
 class AssociationType(DjangoObjectType):
@@ -13,13 +14,22 @@ class AssociationType(DjangoObjectType):
         model = Association
         fields = ("id", "name", "description", "logo_url", "email", "phone", "admin")
 
+# ---------------- Paginated Associations Type ----------------
+class PaginatedAssociations(graphene.ObjectType):
+    associations = graphene.List(AssociationType)
+    page_info = graphene.Field(PageInfo)
+
 # ---------------- Queries ----------------
 class AssociationQuery(graphene.ObjectType):
-    all_associations = graphene.List(AssociationType)
+    all_associations = graphene.Field(PaginatedAssociations, pagination=PaginationInput())
     association = graphene.Field(AssociationType, id=graphene.UUID(required=True))
 
-    def resolve_all_associations(self, info):
-        return Association.objects.select_related('admin').all()
+    def resolve_all_associations(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
+        queryset = Association.objects.select_related('admin').all()
+        associations, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedAssociations(associations=associations, page_info=page_info)
 
     def resolve_association(self, info, id):
         try:

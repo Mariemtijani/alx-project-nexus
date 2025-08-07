@@ -6,6 +6,7 @@ from products.review_model import Review
 from users.models import User
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 
 # -------- Type --------
@@ -14,17 +15,26 @@ class FavoriteType(DjangoObjectType):
         model = Favorite
         fields = ("id", "buyer", "product")
 
+# -------- Paginated Favorites Type --------
+class PaginatedFavorites(graphene.ObjectType):
+    favorites = graphene.List(FavoriteType)
+    page_info = graphene.Field(PageInfo)
+
 # -------- Queries --------
 class FavoritesQuery(graphene.ObjectType):
-    all_favorites = graphene.List(FavoriteType, buyer_id=graphene.UUID(required=True))
+    all_favorites = graphene.Field(PaginatedFavorites, buyer_id=graphene.UUID(required=True), pagination=PaginationInput())
 
-    def resolve_all_favorites(self, info, buyer_id):
+    def resolve_all_favorites(self, info, buyer_id, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
         try:
             buyer = User.objects.get(id=buyer_id, role='buyer')
         except User.DoesNotExist:
             raise GraphQLError('Buyer not found')
 
-        return Favorite.objects.filter(buyer=buyer).select_related('product')
+        queryset = Favorite.objects.filter(buyer=buyer).select_related('product')
+        favorites, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedFavorites(favorites=favorites, page_info=page_info)
 
 # -------- Mutations --------
 class AddFavorite(graphene.Mutation):

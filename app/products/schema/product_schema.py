@@ -4,6 +4,7 @@ from products.models import Product, Category, ProductTranslation, ProductImage
 from associations.models import Artisan, Association
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 
 # ---------------- GraphQL Types ----------------
@@ -44,13 +45,22 @@ class ProductType(DjangoObjectType):
                 return None
         return None
 
+# ---------------- Paginated Products Type ----------------
+class PaginatedProducts(graphene.ObjectType):
+    products = graphene.List(ProductType)
+    page_info = graphene.Field(PageInfo)
+
 # ---------------- Queries ----------------
 class ProductQuery(graphene.ObjectType):
-    all_products = graphene.List(ProductType)
+    all_products = graphene.Field(PaginatedProducts, pagination=PaginationInput())
     product = graphene.Field(ProductType, id=graphene.UUID(required=True))
 
-    def resolve_all_products(self, info):
-        return Product.objects.select_related('category').prefetch_related('translations', 'images').all()
+    def resolve_all_products(self, info, pagination=None):
+        if pagination is None:
+            pagination = PaginationInput()
+        queryset = Product.objects.select_related('category').prefetch_related('translations', 'images').all()
+        products, page_info = paginate_queryset(queryset, pagination)
+        return PaginatedProducts(products=products, page_info=page_info)
 
     def resolve_product(self, info, id):
         try:
