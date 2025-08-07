@@ -1,6 +1,8 @@
 import graphene
 from graphene_django import DjangoObjectType
-from products.models import Favorite, Product
+from products.favorite_model import Favorite
+from products.models import Product
+from products.review_model import Review
 from users.models import User
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required

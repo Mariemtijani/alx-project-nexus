@@ -1,6 +1,8 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from common.models import TimeStampedModel
 from associations.models import Association, Artisan
+from users.models import User
 import uuid
 
 class Category(models.Model):
@@ -34,3 +36,29 @@ class ProductTranslation(models.Model):
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
     image_url = models.URLField()
+
+# Import models from separate files so Django can detect them
+from .favorite_model import Favorite
+from .review_model import Review
+
+# class Favorite(TimeStampedModel):
+#     buyer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'buyer'})
+#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+#     class Meta:
+#         unique_together = ('buyer', 'product')
+
+#     def __str__(self):
+#         return f"{self.buyer.name} - {self.product.title}"
+
+# class Review(TimeStampedModel):
+#     buyer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'buyer'})
+#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+#     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+#     comment = models.TextField(null=True, blank=True)
+
+#     class Meta:
+#         unique_together = ('buyer', 'product')
+
+#     def __str__(self):
+#         return f"{self.buyer.name} - {self.product.title} ({self.rating}/5)"

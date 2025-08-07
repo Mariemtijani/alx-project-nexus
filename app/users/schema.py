@@ -6,6 +6,7 @@ from graphql_jwt.decorators import login_required
 from graphql_jwt.shortcuts import get_token
 from users.utils import hash_password, verify_password
 
+
 # -------------------- GraphQL Type --------------------
 class UserType(DjangoObjectType):
     class Meta:
@@ -31,17 +32,16 @@ class Query(graphene.ObjectType):
 # -------------------- RegisterUser Mutation --------------------
 class RegisterUser(graphene.Mutation):
     user = graphene.Field(UserType)
-    token = graphene.String()
 
     class Arguments:
         name = graphene.String(required=True)
         email = graphene.String(required=True)
         password = graphene.String(required=True)
         phone = graphene.String()
-        role = graphene.String(required=True)
+        role = graphene.String()
         profile_picture = graphene.String()
 
-    def mutate(self, info, name, email, password, role, phone=None, profile_picture=None):
+    def mutate(self, info, name, email, password, role="buyer", phone=None, profile_picture=None):
         if User.objects.filter(email=email).exists():
             raise GraphQLError("Email already registered")
 
@@ -55,8 +55,7 @@ class RegisterUser(graphene.Mutation):
         )
         user.save()
 
-        token = get_token(user)
-        return RegisterUser(user=user, token=token)
+        return RegisterUser(user=user)
 
 # -------------------- LoginUser Mutation --------------------
 class LoginUser(graphene.Mutation):
@@ -120,11 +119,11 @@ class DeleteUser(graphene.Mutation):
     def mutate(self, info, id):
         try:
             user = User.objects.get(id=id)
+            
             user.delete()
             return DeleteUser(success=True)
         except User.DoesNotExist:
             raise GraphQLError("User not found")
-
 # -------------------- Mutation Class --------------------
 class Mutation(graphene.ObjectType):
     register_user = RegisterUser.Field()

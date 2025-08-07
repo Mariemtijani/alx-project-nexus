@@ -26,13 +26,4 @@ class Payment(models.Model):
     payment_date = models.DateTimeField()
     transaction_reference = models.CharField(max_length=255)
 
-class Favorite(models.Model):
-    buyer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'buyer'})
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
-class Review(models.Model):
-    buyer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'buyer'})
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    rating = models.IntegerField()
-    comment = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
