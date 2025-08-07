@@ -1,7 +1,7 @@
 services:
   - type: web
     name: artisan-platform-backend
-    env: docker
+    runtime: docker
     plan: free
     branch: main
     region: oregon
@@ -21,6 +21,6 @@ services:
         value: "False"
 
 databases:
-  - name: artisan_db
+  - name: artisan-platform-db
     databaseName: artisan_db
     user: artisan_user
