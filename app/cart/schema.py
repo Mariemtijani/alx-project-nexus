@@ -1,44 +1,55 @@
-# cart/schema/cart_schema.py
-# type: ignore
 import graphene
 from graphene_django import DjangoObjectType
 from graphql_jwt.decorators import login_required
-from cart.models import Cart
+from cart.models import Cart, CartItem
 from products.models import Product
 from users.models import User
 from graphql import GraphQLError
 from common.pagination import PaginationInput, PageInfo, paginate_queryset
 
 
-# -------------------- GraphQL Type --------------------
+# -------------------- GraphQL Types --------------------
 class CartType(DjangoObjectType):
     class Meta:
         model = Cart
-        fields = ("id", "user", "product", "quantity", "created_at", "updated_at")
+        fields = ("id", "user", "created_at", "updated_at", "items")
+
+class CartItemType(DjangoObjectType):
+    class Meta:
+        model = CartItem
+        fields = ("id", "cart", "product", "quantity", "price_at_add", "added_at")
 
 
 # -------------------- Paginated Cart Type --------------------
-class PaginatedCart(graphene.ObjectType):
-    cart_items = graphene.List(CartType)
+class PaginatedCartItems(graphene.ObjectType):
+    cart_items = graphene.List(CartItemType)
     page_info = graphene.Field(PageInfo)
 
 # -------------------- Queries --------------------
 class CartQuery(graphene.ObjectType):
-    my_cart = graphene.Field(PaginatedCart, pagination=PaginationInput())
+    my_cart = graphene.Field(CartType)
+    my_cart_items = graphene.Field(PaginatedCartItems, pagination=PaginationInput())
 
     @login_required
-    def resolve_my_cart(self, info, pagination=None):
+    def resolve_my_cart(self, info):
+        user = info.context.user
+        cart, created = Cart.objects.get_or_create(user=user)
+        return cart
+    
+    @login_required
+    def resolve_my_cart_items(self, info, pagination=None):
         if pagination is None:
             pagination = PaginationInput()
         user = info.context.user
-        queryset = Cart.objects.filter(user=user)
+        cart, created = Cart.objects.get_or_create(user=user)
+        queryset = CartItem.objects.filter(cart=cart)
         cart_items, page_info = paginate_queryset(queryset, pagination)
-        return PaginatedCart(cart_items=cart_items, page_info=page_info)
+        return PaginatedCartItems(cart_items=cart_items, page_info=page_info)
 
 
 # -------------------- Mutations --------------------
 class AddToCart(graphene.Mutation):
-    cart = graphene.Field(CartType)
+    cart_item = graphene.Field(CartItemType)
 
     class Arguments:
         product_id = graphene.UUID(required=True)
@@ -52,48 +63,52 @@ class AddToCart(graphene.Mutation):
         except Product.DoesNotExist:
             raise GraphQLError("Product not found")
 
-        cart_item, created = Cart.objects.get_or_create(user=user, product=product)
-        if not created:
+        cart, created = Cart.objects.get_or_create(user=user)
+        cart_item, item_created = CartItem.objects.get_or_create(
+            cart=cart, 
+            product=product,
+            defaults={'quantity': quantity, 'price_at_add': product.price}
+        )
+        
+        if not item_created:
             cart_item.quantity += quantity
-        else:
-            cart_item.quantity = quantity
+            cart_item.save()
 
-        cart_item.save()
-        return AddToCart(cart=cart_item)
+        return AddToCart(cart_item=cart_item)
 
 
 class UpdateCartItem(graphene.Mutation):
-    cart = graphene.Field(CartType)
+    cart_item = graphene.Field(CartItemType)
 
     class Arguments:
-        cart_id = graphene.UUID(required=True)
+        cart_item_id = graphene.UUID(required=True)
         quantity = graphene.Int(required=True)
 
     @login_required
-    def mutate(self, info, cart_id, quantity):
+    def mutate(self, info, cart_item_id, quantity):
         try:
-            cart_item = Cart.objects.get(id=cart_id, user=info.context.user)
-        except Cart.DoesNotExist:
+            cart_item = CartItem.objects.get(id=cart_item_id, cart__user=info.context.user)
+        except CartItem.DoesNotExist:
             raise GraphQLError("Cart item not found")
 
         cart_item.quantity = quantity
         cart_item.save()
-        return UpdateCartItem(cart=cart_item)
+        return UpdateCartItem(cart_item=cart_item)
 
 
 class DeleteCartItem(graphene.Mutation):
     success = graphene.Boolean()
 
     class Arguments:
-        cart_id = graphene.UUID(required=True)
+        cart_item_id = graphene.UUID(required=True)
 
     @login_required
-    def mutate(self, info, cart_id):
+    def mutate(self, info, cart_item_id):
         try:
-            cart_item = Cart.objects.get(id=cart_id, user=info.context.user)
+            cart_item = CartItem.objects.get(id=cart_item_id, cart__user=info.context.user)
             cart_item.delete()
             return DeleteCartItem(success=True)
-        except Cart.DoesNotExist:
+        except CartItem.DoesNotExist:
             raise GraphQLError("Cart item not found")
 
 

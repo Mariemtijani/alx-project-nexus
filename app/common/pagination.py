@@ -5,8 +5,8 @@ from typing import Tuple, Any
 
 class PaginationInput(graphene.InputObjectType):
     """GraphQL input type for pagination parameters."""
-    page = graphene.Int(default_value=1)
-    page_size = graphene.Int(default_value=10)
+    page = graphene.Int()
+    page_size = graphene.Int()
 
 class PageInfo(graphene.ObjectType):
     """GraphQL type for pagination metadata."""
@@ -26,8 +26,11 @@ def paginate_queryset(queryset: QuerySet, pagination_input: PaginationInput) -> 
     Returns:
         Tuple of (paginated_objects, page_info)
     """
-    paginator = Paginator(queryset, pagination_input.page_size)
-    current_page = paginator.get_page(pagination_input.page)
+    page = pagination_input.page or 1
+    page_size = pagination_input.page_size or 10
+    
+    paginator = Paginator(queryset, page_size)
+    current_page = paginator.get_page(page)
     
     page_info = PageInfo(
         has_next_page=current_page.has_next(),
