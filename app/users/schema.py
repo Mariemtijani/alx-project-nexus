@@ -6,16 +6,19 @@ from graphql_jwt.decorators import login_required
 from graphql_jwt.shortcuts import get_token
 from users.utils import hash_password, verify_password
 from common.pagination import PaginationInput, PageInfo, paginate_queryset
+from typing import Optional
 
 
 # -------------------- GraphQL Type --------------------
 class UserType(DjangoObjectType):
+    """GraphQL type for User model."""
     class Meta:
         model = User
         fields = ("id", "name", "email", "phone", "role", "profile_picture", "created_at", "updated_at")
 
 # -------------------- Paginated Users Type --------------------
 class PaginatedUsers(graphene.ObjectType):
+    """Paginated response for user queries."""
     users = graphene.List(UserType)
     page_info = graphene.Field(PageInfo)
 
@@ -25,14 +28,16 @@ class Query(graphene.ObjectType):
     user = graphene.Field(UserType, id=graphene.UUID(required=True))
 
     @login_required
-    def resolve_all_users(self, info, pagination=None):
+    def resolve_all_users(self, info, pagination: Optional[PaginationInput] = None) -> PaginatedUsers:
+        """Fetch all users with pagination."""
         if pagination is None:
             pagination = PaginationInput()
-        users, page_info = paginate_queryset(User.objects.all(), pagination)
-        return PaginatedUsers(users=users, page_info=page_info)
+        paginated_users, page_info = paginate_queryset(User.objects.all(), pagination)
+        return PaginatedUsers(users=paginated_users, page_info=page_info)
 
     @login_required
-    def resolve_user(self, info, id):
+    def resolve_user(self, info, id: str) -> User:
+        """Fetch single user by ID."""
         try:
             return User.objects.get(id=id)
         except User.DoesNotExist:
@@ -40,6 +45,7 @@ class Query(graphene.ObjectType):
 
 # -------------------- RegisterUser Mutation --------------------
 class RegisterUser(graphene.Mutation):
+    """Mutation to register a new user."""
     user = graphene.Field(UserType)
 
     class Arguments:
@@ -50,24 +56,29 @@ class RegisterUser(graphene.Mutation):
         role = graphene.String()
         profile_picture = graphene.String()
 
-    def mutate(self, info, name, email, password, role="buyer", phone=None, profile_picture=None):
+    def mutate(self, info, name: str, email: str, password: str, role: str = "buyer", 
+              phone: Optional[str] = None, profile_picture: Optional[str] = None) -> 'RegisterUser':
+        """Create new user account with hashed password."""
+        # Check for existing email
         if User.objects.filter(email=email).exists():
             raise GraphQLError("Email already registered")
 
-        user = User(
+        # Create new user with hashed password
+        new_user = User(
             name=name,
             email=email,
-            password=hash_password(password),
+            password=hash_password(password),  # Hash password for security
             role=role,
             phone=phone,
             profile_picture=profile_picture
         )
-        user.save()
+        new_user.save()
 
-        return RegisterUser(user=user)
+        return RegisterUser(user=new_user)
 
 # -------------------- LoginUser Mutation --------------------
 class LoginUser(graphene.Mutation):
+    """Mutation to authenticate user and return JWT token."""
     user = graphene.Field(UserType)
     token = graphene.String()
 
@@ -75,17 +86,20 @@ class LoginUser(graphene.Mutation):
         email = graphene.String(required=True)
         password = graphene.String(required=True)
 
-    def mutate(self, info, email, password):
+    def mutate(self, info, email: str, password: str) -> 'LoginUser':
+        """Authenticate user and generate JWT token."""
         try:
-            user = User.objects.get(email=email)
+            authenticated_user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise GraphQLError('Invalid email or password')
 
-        if not verify_password(password, user.password):
+        # Verify password using bcrypt
+        if not verify_password(password, authenticated_user.password):
             raise GraphQLError('Invalid email or password')
 
-        token = get_token(user)
-        return LoginUser(user=user, token=token)
+        # Generate JWT token
+        auth_token = get_token(authenticated_user)
+        return LoginUser(user=authenticated_user, token=auth_token)
 
 # -------------------- UpdateUser Mutation --------------------
 class UpdateUser(graphene.Mutation):

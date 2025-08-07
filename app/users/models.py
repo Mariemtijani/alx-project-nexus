@@ -1,9 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from common.models import TimeStampedModel
+from typing import Optional
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
+    """Custom user manager for handling user creation."""
+    
+    def create_user(self, email: str, password: Optional[str] = None, **extra_fields) -> 'User':
+        """Create and return a regular user with email and password."""
         if not email:
             raise ValueError('Email is required')
         email = self.normalize_email(email)
@@ -13,6 +17,11 @@ class UserManager(BaseUserManager):
         return user
 
 class User(AbstractBaseUser, TimeStampedModel):
+    """Custom user model for the artisan platform.
+    
+    Supports multiple user roles: platform_admin, association_admin, artisan, buyer.
+    Uses email as the unique identifier instead of username.
+    """
     USERNAME_FIELD = 'email'
     
     ROLE_CHOICES = [
@@ -35,13 +44,16 @@ class User(AbstractBaseUser, TimeStampedModel):
 
     objects = UserManager()
 
-    def has_perm(self, perm, obj=None):
+    def has_perm(self, perm: str, obj=None) -> bool:
+        """Check if user has specific permission."""
         return self.is_superuser
 
-    def has_module_perms(self, app_label):
+    def has_module_perms(self, app_label: str) -> bool:
+        """Check if user has permissions for app module."""
         return self.is_superuser
 
-    def get_username(self):
+    def get_username(self) -> str:
+        """Return email as username."""
         return self.email
 
     def __str__(self):

@@ -13,6 +13,7 @@ class Query(users_schema.Query,
             orders_schema.Query,
             CartQuery, 
             graphene.ObjectType):
+    """Root GraphQL query combining all app queries."""
     pass
 
 class Mutation(users_schema.Mutation,
@@ -21,8 +22,9 @@ class Mutation(users_schema.Mutation,
                orders_schema.Mutation, 
                CartMutation,
                graphene.ObjectType):
-    token_auth = graphql_jwt.ObtainJSONWebToken.Field()
-    refresh_token = graphql_jwt.Refresh.Field()
-    verify_token = graphql_jwt.Verify.Field()
+    """Root GraphQL mutation combining all app mutations and JWT auth."""
+    token_auth = graphql_jwt.ObtainJSONWebToken.Field()  # JWT login
+    refresh_token = graphql_jwt.Refresh.Field()  # Token refresh
+    verify_token = graphql_jwt.Verify.Field()  # Token verification
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

@@ -2,38 +2,41 @@
 from pathlib import Path
 import environ
 
-
+# Environment variables setup
 env = environ.Env()
 environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-=jplr%ghen*v671grqi9g@1!ug10&4$v6^@$(gbp&hlnaptoiu'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Allowed hosts for the application
 ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
+    # Django core apps
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # apps
-    'users',
-    'associations',
-    'products',
-    'orders',
-    'cart',
+    # Custom applications
+    'users',          # User management and authentication
+    'associations',   # Artisan associations
+    'products',       # Product catalog
+    'orders',         # Order processing
+    'cart',          # Shopping cart functionality
 
-    # GraphQL
-    'graphene_django',
+    # Third-party packages
+    'graphene_django',  # GraphQL API
 ]
 
 MIDDLEWARE = [
@@ -66,9 +69,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# Database configuration
+# PostgreSQL database for production-grade performance
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -123,17 +125,20 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# GraphQL configuration
 GRAPHENE = {
-    'SCHEMA': 'core.schema.schema',
-     'MIDDLEWARE': [
-        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    'SCHEMA': 'core.schema.schema',  # Main GraphQL schema
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',  # JWT authentication
     ],
 }
 
+# Custom user model
 AUTH_USER_MODEL = 'users.User'
 
+# Authentication backends
 AUTHENTICATION_BACKENDS = [
-    'graphql_jwt.backends.JSONWebTokenBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    'graphql_jwt.backends.JSONWebTokenBackend',  # JWT authentication
+    'django.contrib.auth.backends.ModelBackend',  # Default Django auth
 ]
 

@@ -4,6 +4,10 @@ from users.models import User
 from products.models import Product
 
 class Order(TimeStampedModel):
+    """Order model for tracking customer purchases.
+    
+    Manages order lifecycle from pending to delivered.
+    """
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'buyer'})
     total_amount = models.FloatField()
     STATUS_CHOICES = [('pending', 'Pending'), ('paid', 'Paid'), ('shipped', 'Shipped'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled')]
@@ -13,12 +17,14 @@ class Order(TimeStampedModel):
     tracking_number = models.CharField(max_length=100, null=True, blank=True)
 
 class OrderItem(models.Model):
+    """Individual items within an order."""
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField()
     unit_price = models.FloatField()
 
 class Payment(models.Model):
+    """Payment tracking for orders."""
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     payment_method = models.CharField(max_length=50)
     STATUS_CHOICES = [('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')]

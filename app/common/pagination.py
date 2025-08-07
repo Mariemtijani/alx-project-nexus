@@ -1,27 +1,40 @@
 import graphene
 from django.core.paginator import Paginator
+from django.db.models import QuerySet
+from typing import Tuple, Any
 
 class PaginationInput(graphene.InputObjectType):
+    """GraphQL input type for pagination parameters."""
     page = graphene.Int(default_value=1)
     page_size = graphene.Int(default_value=10)
 
 class PageInfo(graphene.ObjectType):
+    """GraphQL type for pagination metadata."""
     has_next_page = graphene.Boolean()
     has_previous_page = graphene.Boolean()
     current_page = graphene.Int()
     total_pages = graphene.Int()
     total_count = graphene.Int()
 
-def paginate_queryset(queryset, pagination_input):
+def paginate_queryset(queryset: QuerySet, pagination_input: PaginationInput) -> Tuple[Any, PageInfo]:
+    """Paginate Django queryset and return results with page info.
+    
+    Args:
+        queryset: Django QuerySet to paginate
+        pagination_input: PaginationInput with page and page_size
+        
+    Returns:
+        Tuple of (paginated_objects, page_info)
+    """
     paginator = Paginator(queryset, pagination_input.page_size)
-    page = paginator.get_page(pagination_input.page)
+    current_page = paginator.get_page(pagination_input.page)
     
     page_info = PageInfo(
-        has_next_page=page.has_next(),
-        has_previous_page=page.has_previous(),
-        current_page=page.number,
+        has_next_page=current_page.has_next(),
+        has_previous_page=current_page.has_previous(),
+        current_page=current_page.number,
         total_pages=paginator.num_pages,
         total_count=paginator.count
     )
     
-    return page.object_list, page_info
+    return current_page.object_list, page_info
