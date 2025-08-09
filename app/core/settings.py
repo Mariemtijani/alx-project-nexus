@@ -22,9 +22,6 @@ ALLOWED_HOSTS = [
     "*"
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://alx-project-nexus-1.onrender.com",
-]
 
 # Application definition
 INSTALLED_APPS = [
