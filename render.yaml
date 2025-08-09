@@ -6,8 +6,7 @@ services:
     branch: main
     region: oregon
     dockerfilePath: ./Dockerfile
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
-    startCommand: ""
+    # buildCommand/startCommand are ignored for docker runtime, so remove them
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: core.settings
@@ -19,6 +18,9 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      - key: ALLOWED_HOSTS
+        value: "alx-project-nexus-1.onrender.com,localhost"
+    healthCheckPath: /healthz   # add a tiny view for this if you like
 
 databases:
   - name: artisan-platform-db
