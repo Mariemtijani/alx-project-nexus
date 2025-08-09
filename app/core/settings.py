@@ -19,8 +19,7 @@ DEBUG = False
 
 # Allowed hosts for the application
 ALLOWED_HOSTS = [
-    "alx-project-nexus-1.onrender.com",
-    "localhost",
+    "*"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
