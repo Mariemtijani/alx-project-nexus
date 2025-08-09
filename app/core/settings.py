@@ -19,11 +19,13 @@ DEBUG = False
 
 # Allowed hosts for the application
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'https://alx-project-nexus-1.onrender.com/',
+    "alx-project-nexus-1.onrender.com",
+    "localhost",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://alx-project-nexus-1.onrender.com",
+]
 
 # Application definition
 INSTALLED_APPS = [
