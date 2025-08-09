@@ -6,7 +6,7 @@ services:
     branch: main
     region: oregon
     dockerfilePath: ./Dockerfile
-    buildCommand: ""
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
     startCommand: ""
     envVars:
       - key: DJANGO_SETTINGS_MODULE
