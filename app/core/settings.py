@@ -18,7 +18,11 @@ SECRET_KEY = 'django-insecure-=jplr%ghen*v671grqi9g@1!ug10&4$v6^@$(gbp&hlnaptoiu
 DEBUG = False
 
 # Allowed hosts for the application
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'http://alx-project-nexus-1.onrender.com/',
+]
 
 
 # Application definition
