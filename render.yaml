@@ -1,12 +1,12 @@
 services:
   - type: web
     name: artisan-platform-backend
-    runtime: docker
+    runtime: python
     plan: free
     branch: main
     region: oregon
-    dockerfilePath: ./Dockerfile
-    # buildCommand/startCommand are ignored for docker runtime, so remove them
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: core.settings
@@ -20,7 +20,6 @@ services:
         value: "False"
       - key: ALLOWED_HOSTS
         value: "alx-project-nexus-1.onrender.com,localhost"
-    healthCheckPath: /healthz   # add a tiny view for this if you like
 
 databases:
   - name: artisan-platform-db
