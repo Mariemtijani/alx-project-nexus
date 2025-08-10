@@ -15,7 +15,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-=jplr%ghen*v671grqi9g@1!ug10&4$v6^@$(gbp&hlnaptoiu'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # Allowed hosts for the application
 ALLOWED_HOSTS = [
@@ -151,8 +151,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default Django auth
 ]
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# STATIC_URL = '/static/'
+# STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Whitenoise config
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# # Whitenoise config
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

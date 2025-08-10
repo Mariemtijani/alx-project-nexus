@@ -201,8 +201,48 @@ class DeleteProduct(graphene.Mutation):
         except Product.DoesNotExist:
             raise GraphQLError('Product not found')
 
+class ApproveProduct(graphene.Mutation):
+    product = graphene.Field(ProductType)
+
+    class Arguments:
+        id = graphene.UUID(required=True)
+
+    @login_required
+    def mutate(self, info, id):
+        user = info.context.user
+        if user.role != 'platform_admin':
+            raise GraphQLError('Only platform admins can approve products')
+        
+        try:
+            product = Product.objects.get(id=id)
+            product.approve()
+            return ApproveProduct(product=product)
+        except Product.DoesNotExist:
+            raise GraphQLError('Product not found')
+
+class RejectProduct(graphene.Mutation):
+    product = graphene.Field(ProductType)
+
+    class Arguments:
+        id = graphene.UUID(required=True)
+
+    @login_required
+    def mutate(self, info, id):
+        user = info.context.user
+        if user.role != 'platform_admin':
+            raise GraphQLError('Only platform admins can reject products')
+        
+        try:
+            product = Product.objects.get(id=id)
+            product.reject()
+            return RejectProduct(product=product)
+        except Product.DoesNotExist:
+            raise GraphQLError('Product not found')
+
 # ---------------- Mutation Class ----------------
 class ProductMutation(graphene.ObjectType):
     create_product = CreateProduct.Field()
     update_product = UpdateProduct.Field()
     delete_product = DeleteProduct.Field()
+    approve_product = ApproveProduct.Field()
+    reject_product = RejectProduct.Field()

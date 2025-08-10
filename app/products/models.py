@@ -30,6 +30,16 @@ class Product(TimeStampedModel):
     STATUS_CHOICES = [('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
+    def approve(self):
+        """Approve the product."""
+        self.status = 'approved'
+        self.save()
+    
+    def reject(self):
+        """Reject the product."""
+        self.status = 'rejected'
+        self.save()
+
     def __str__(self):
         return self.title
 
